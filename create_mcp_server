@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+
+import os
+import shutil
+import re
+import sys
+from pathlib import Path
+
+def replace_in_file(file_path, new_name):
+    """Replace all occurrences of my-mcp/my_mcp with new_name in a file."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Replace both underscore and hyphen versions
+        content = content.replace('my_mcp', new_name.replace('-', '_'))
+        content = content.replace('my-mcp', new_name)
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except Exception as e:
+        print(f"Warning: Could not process {file_path}: {e}")
+
+def rename_directories(base_path, new_name):
+    """Rename directories from my_mcp to new_name."""
+    old_dir = base_path / 'my_mcp'
+    new_dir = base_path / new_name.replace('-', '_')
+    
+    if old_dir.exists():
+        old_dir.rename(new_dir)
+        print(f"  Renamed directory: my_mcp -> {new_name.replace('-', '_')}")
+    
+    # Also handle egg-info directory
+    old_egg = base_path / 'my_mcp.egg-info'
+    new_egg = base_path / f"{new_name.replace('-', '_')}.egg-info"
+    
+    if old_egg.exists():
+        old_egg.rename(new_egg)
+        print(f"  Renamed directory: my_mcp.egg-info -> {new_name.replace('-', '_')}.egg-info")
+
+def create_mcp_from_template(new_name):
+    """Create a new MCP server from the template."""
+    script_dir = Path(__file__).parent
+    new_dir = script_dir.parent / new_name
+    
+    # Check if destination already exists
+    if new_dir.exists():
+        response = input(f"Directory '{new_name}' already exists. Overwrite? (y/n): ")
+        if response.lower() != 'y':
+            print("Aborted.")
+            return False
+        shutil.rmtree(new_dir)
+    
+    print(f"\nCreating new MCP server '{new_name}'...")
+    
+    # Copy the entire project, excluding git and __pycache__
+    def ignore_patterns(dir, files):
+        ignore = []
+        for f in files:
+            full_path = os.path.join(dir, f)
+            if f == '.git' or f == '__pycache__' or f == 'create_mcp_server':
+                ignore.append(f)
+            elif os.path.isdir(full_path):
+                # Check if it's a __pycache__ directory
+                if f == '__pycache__':
+                    ignore.append(f)
+        return ignore
+    
+    shutil.copytree(script_dir, new_dir, ignore=ignore_patterns)
+    print(f"  Copied template to {new_dir}")
+    
+    # Files that need text replacement
+    files_to_process = [
+        'README.md',
+        'pyproject.toml',
+        'setup.py',
+        'docker-compose.yml',
+        'build-docker-image.sh',
+        'Makefile',
+        'Dockerfile',
+        'config.json',
+        'docs/build-options.md',
+        'docs/docker-usage.md',
+    ]
+    
+    # Process main files
+    print("\nReplacing 'my_mcp' and 'my-mcp' references...")
+    for file_path in files_to_process:
+        full_path = new_dir / file_path
+        if full_path.exists():
+            replace_in_file(full_path, new_name)
+            print(f"  Processed: {file_path}")
+    
+    # Process Python files in the module directory
+    module_dir = new_dir / 'my_mcp'
+    if module_dir.exists():
+        for py_file in module_dir.rglob('*.py'):
+            relative_path = py_file.relative_to(new_dir)
+            replace_in_file(py_file, new_name)
+            print(f"  Processed: {relative_path}")
+    
+    # Process test files
+    test_dir = new_dir / 'tests'
+    if test_dir.exists():
+        for py_file in test_dir.rglob('*.py'):
+            relative_path = py_file.relative_to(new_dir)
+            replace_in_file(py_file, new_name)
+            print(f"  Processed: {relative_path}")
+    
+    # Rename directories
+    print("\nRenaming directories...")
+    rename_directories(new_dir, new_name)
+    
+    print(f"\n✅ Successfully created new MCP server: {new_name}")
+    print(f"📁 Location: {new_dir}")
+    print("\nNext steps:")
+    print(f"  1. cd ../{new_name}")
+    print("  2. Update the README.md with your server's description")
+    print("  3. Implement your MCP tools in the server.py file")
+    print("  4. Run 'make install' to install dependencies")
+    
+    return True
+
+def validate_name(name):
+    """Validate the MCP name."""
+    # Check for valid Python package name (with hyphens allowed)
+    if not re.match(r'^[a-z][a-z0-9-]*$', name):
+        print("Error: Name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens.")
+        return False
+    
+    if name == 'my-mcp' or name == 'my_mcp':
+        print("Error: Please choose a different name than 'my-mcp' or 'my_mcp'.")
+        return False
+    
+    return True
+
+def main():
+    print("MCP Server Creator")
+    print("=" * 40)
+    print("This script will create a new MCP server from this template.\n")
+    
+    # Get the new MCP name
+    while True:
+        new_name = input("Enter the name for your new MCP server (e.g., weather-mcp): ").strip()
+        
+        if not new_name:
+            print("Error: Name cannot be empty.\n")
+            continue
+        
+        if validate_name(new_name):
+            break
+        print()
+    
+    # Create the new MCP server
+    if create_mcp_from_template(new_name):
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
