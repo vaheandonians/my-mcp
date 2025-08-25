@@ -26,7 +26,7 @@ make sync-requirements
 python scripts/sync-requirements.py
 ```
 
-The Docker build process automatically generates `requirements.txt` during the build, ensuring consistency between local development and containerized environments.
+The build scripts automatically generate `requirements.txt` from `pyproject.toml` before building the Docker image, ensuring consistency between local development and containerized environments.
 
 #### Adding New Dependencies
 
@@ -104,7 +104,7 @@ The Docker container packages the MCP server with all its dependencies and can r
 ### Docker Image Features
 
 - Based on Python 3.13 slim image for minimal size
-- Automatically generates requirements.txt from pyproject.toml during build
+- Uses pre-generated requirements.txt for faster builds
 - Includes all required dependencies
 - Stores secrets securely during build
 - Automatically configures SSL certificates
@@ -122,6 +122,7 @@ The Docker container packages the MCP server with all its dependencies and can r
    This script will:
    - Check for an existing `.env` file
    - Prompt for `SAMPLE_SECRET` if needed
+   - Generate requirements.txt from pyproject.toml
    - Stop and remove any existing my-mcp containers
    - Build the Docker image with proper environment variables
    - Display usage instructions when complete
@@ -129,6 +130,10 @@ The Docker container packages the MCP server with all its dependencies and can r
 #### Manual Docker build:
 
    ```bash
+   # First, generate requirements.txt
+   python scripts/sync-requirements.py
+   
+   # Then build the Docker image
    docker build --build-arg SAMPLE_SECRET=your_secret_here -t my-mcp .
    ```
 

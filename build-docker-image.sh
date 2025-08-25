@@ -28,6 +28,9 @@ if [ -z "$SAMPLE_SECRET" ]; then
     exit 1
 fi
 
+echo "Generating requirements.txt from pyproject.toml..."
+python scripts/sync-requirements.py
+
 echo "Stopping and removing existing my-mcp containers..."
 docker ps -a --filter "name=my-mcp" -q | xargs -r docker rm -f || true
 
