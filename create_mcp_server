@@ -71,7 +71,7 @@ def create_mcp_from_template(new_name):
     
     # Files that need text replacement
     files_to_process = [
-        'README.md',
+        'docs/README.md',  # Process this before copying to root
         'pyproject.toml',
         'setup.py',
         'docker-compose.yml',
@@ -111,13 +111,29 @@ def create_mcp_from_template(new_name):
     print("\nRenaming directories...")
     rename_directories(new_dir, new_name)
     
+    # Copy the proper README from docs to root
+    print("\nSetting up documentation...")
+    docs_readme = new_dir / 'docs' / 'README.md'
+    root_readme = new_dir / 'README.md'
+    if docs_readme.exists():
+        # Remove the template-specific README first
+        if root_readme.exists():
+            root_readme.unlink()
+        # Copy the proper project README
+        shutil.copy2(docs_readme, root_readme)
+        print(f"  Copied docs/README.md to project root")
+        # Optionally remove docs/README.md to avoid duplication
+        # docs_readme.unlink()
+        # print(f"  Removed docs/README.md (now in root)")
+    
     print(f"\n✅ Successfully created new MCP server: {new_name}")
     print(f"📁 Location: {new_dir}")
     print("\nNext steps:")
     print(f"  1. cd ../{new_name}")
-    print("  2. Update the README.md with your server's description")
+    print("  2. Review and customize the README.md")
     print("  3. Implement your MCP tools in the server.py file")
-    print("  4. Run 'make install' to install dependencies")
+    print("  4. Run 'uv sync' to install dependencies")
+    print("  5. Update config.json with your server details")
     
     return True
 
