@@ -1,5 +1,7 @@
 from typing import Annotated, Callable
 import functools
+import os
+import sys
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
@@ -19,7 +21,14 @@ def handle_errors(func: Callable) -> Callable:
     return wrapper
 
 
-mcp = FastMCP("my-mcp")
+# Initialize FastMCP based on how the script is being run
+# Check if we're running via the SSE entry point
+if os.path.basename(sys.argv[0]).endswith('my-mcp-sse') or 'sse' in sys.argv[0]:
+    # Running in SSE mode - bind to 0.0.0.0 for Docker compatibility
+    mcp = FastMCP("my-mcp", host="0.0.0.0")
+else:
+    # Running in STDIO mode or during import/testing
+    mcp = FastMCP("my-mcp")
 
 @mcp.prompt()
 def summarize_text(text_to_summarize: str) -> str:
@@ -51,8 +60,10 @@ def get_fibonacci_sequence(
 
 
 def sse():
+    """Run the MCP server in SSE mode."""
     mcp.run(transport="sse")
 
 
 def stdio():
+    """Run the MCP server in STDIO mode."""
     mcp.run(transport="stdio")

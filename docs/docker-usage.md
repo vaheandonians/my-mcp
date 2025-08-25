@@ -28,7 +28,7 @@ docker run -i my-mcp stdio
 
 ### SSE Mode (Server-Sent Events)
 
-SSE mode runs an HTTP server on port 8000:
+SSE mode runs an HTTP server on port 8000, automatically binding to `0.0.0.0` for Docker compatibility:
 
 ```bash
 # Run in SSE mode

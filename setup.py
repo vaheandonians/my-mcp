@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="my-mcp",
+    name="jules",
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
@@ -11,8 +11,8 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "my-mcp-sse=mcp.server:sse",
-            "my-mcp-stdio=mcp.server:stdio",
+            "jules-sse=jules.server:sse",
+            "jules-stdio=jules.server:stdio",
         ],
     },
 )

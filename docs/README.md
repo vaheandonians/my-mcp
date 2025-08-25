@@ -161,6 +161,8 @@ The Docker container supports two modes: STDIO and SSE (Server-Sent Events).
    docker run -d -p 8000:8000 --name my-mcp-server my-mcp sse
    ```
 
+**Note:** In SSE mode, the server automatically binds to `0.0.0.0` to allow connections from outside the Docker container.
+
 #### Using Docker Compose:
 
 Docker Compose provides an alternative way to build and run the container:

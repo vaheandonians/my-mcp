@@ -53,21 +53,29 @@ def create_mcp_from_template(new_name):
     
     print(f"\nCreating new MCP server '{new_name}'...")
     
-    # Copy the entire project, excluding git and __pycache__
+    # Copy the entire project, excluding unnecessary files and directories
     def ignore_patterns(dir, files):
         ignore = []
+        ignore_dirs = {'.git', '__pycache__', '.venv', 'venv', 'cache', '.claude', 
+                      '.pytest_cache', '.coverage', 'htmlcov', '.env', 'secrets',
+                      '*.egg-info', 'dist', 'build', '.DS_Store', 'uv.lock'}
+        
         for f in files:
-            full_path = os.path.join(dir, f)
-            if f == '.git' or f == '__pycache__' or f == 'create_mcp_server':
+            # Check if file/dir should be ignored
+            if f in ignore_dirs or f == 'create_mcp_server':
                 ignore.append(f)
-            elif os.path.isdir(full_path):
-                # Check if it's a __pycache__ directory
-                if f == '__pycache__':
-                    ignore.append(f)
+            # Also check for egg-info directories with any prefix
+            elif f.endswith('.egg-info'):
+                ignore.append(f)
+            # Ignore hidden files and directories (except .gitignore which might be useful)
+            elif f.startswith('.') and f != '.gitignore':
+                ignore.append(f)
         return ignore
     
+    print("  Copying template files...")
     shutil.copytree(script_dir, new_dir, ignore=ignore_patterns)
     print(f"  Copied template to {new_dir}")
+    print("  Excluded: .venv, cache, .claude, __pycache__, .env, uv.lock, and other temporary/build files")
     
     # Files that need text replacement
     files_to_process = [
@@ -132,7 +140,7 @@ def create_mcp_from_template(new_name):
     print(f"  1. cd ../{new_name}")
     print("  2. Review and customize the README.md")
     print("  3. Implement your MCP tools in the server.py file")
-    print("  4. Run 'uv sync' to install dependencies")
+    print("  4. Run 'uv sync' to install dependencies and create uv.lock")
     print("  5. Update config.json with your server details")
     
     return True
