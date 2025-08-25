@@ -1,0 +1,59 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Copy pyproject.toml first to generate requirements.txt
+COPY pyproject.toml /app/
+COPY scripts/sync-requirements.py /app/scripts/
+
+ARG SAMPLE_SECRET
+
+RUN python -m pip install -U pip certifi
+
+# Generate requirements.txt from pyproject.toml
+RUN python scripts/sync-requirements.py
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN mkdir -p /app/secrets && \
+    echo "${SAMPLE_SECRET}" > /app/secrets/SAMPLE_SECRET.txt
+
+COPY . /app/
+RUN pip install --no-cache-dir -e .
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+EXPOSE 8000
+
+# Create a wrapper script to handle both modes and set the environment variable
+RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
+    echo '' >> /app/entrypoint.sh && \
+    echo '# Export environment variables' >> /app/entrypoint.sh && \
+    echo 'export SAMPLE_SECRET=$(cat /app/secrets/SAMPLE_SECRET.txt)' >> /app/entrypoint.sh && \
+    echo 'export SSL_CERT_FILE=$(python -m certifi)' >> /app/entrypoint.sh && \
+    echo '' >> /app/entrypoint.sh && \
+    echo '# Check the mode and run appropriate command' >> /app/entrypoint.sh && \
+    echo 'case "$1" in' >> /app/entrypoint.sh && \
+    echo '  sse)' >> /app/entrypoint.sh && \
+    echo '    echo "Starting MCP server in SSE mode on port 8000..."' >> /app/entrypoint.sh && \
+    echo '    exec my-mcp-sse' >> /app/entrypoint.sh && \
+    echo '    ;;' >> /app/entrypoint.sh && \
+    echo '  stdio)' >> /app/entrypoint.sh && \
+    echo '    echo "Starting MCP server in STDIO mode..."' >> /app/entrypoint.sh && \
+    echo '    exec my-mcp-stdio' >> /app/entrypoint.sh && \
+    echo '    ;;' >> /app/entrypoint.sh && \
+    echo '  *)' >> /app/entrypoint.sh && \
+    echo '    echo "Usage: $0 {sse|stdio}"' >> /app/entrypoint.sh && \
+    echo '    echo "  sse   - Run in Server-Sent Events mode (port 8000)"' >> /app/entrypoint.sh && \
+    echo '    echo "  stdio - Run in STDIO mode (default)"' >> /app/entrypoint.sh && \
+    echo '    exit 1' >> /app/entrypoint.sh && \
+    echo '    ;;' >> /app/entrypoint.sh && \
+    echo 'esac' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default to stdio mode
+CMD ["stdio"]

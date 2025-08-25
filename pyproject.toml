@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=42.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-mcp"
+version = "0.1.0"
+description = "A simple MCP server"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "python-dotenv",
+    "typeguard",
+]
+
+[project.scripts]
+my-mcp-sse = "my_mcp.server:sse"
+my-mcp-stdio = "my_mcp.server:stdio"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.setuptools]
+packages = ["my_mcp"]
+
+[tool.pytest]
+testpaths = ["tests"]
